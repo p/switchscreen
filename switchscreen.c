@@ -21,12 +21,11 @@
 #include <getopt.h>
 #include <unistd.h>
 #include <X11/Xlib.h>
-#include <X11/extensions/XTest.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
 
-#define VERSION "0.1.0"
+#define VERSION "0.1.1"
 
 #define ACTION_PRINTSCREEN 1
 #define ACTION_PRINTCOORDS 2
@@ -57,17 +56,13 @@ int main(int argc, char *argv[]) {
 	int screen=-1;
 	int x=-1, y=-1;
 	int quiet=0;
+	int print=0;
 
 	Window wtmp;
 	int itmp;
 
-	dpy = XOpenDisplay(NULL);
-	if (dpy==NULL) {
-		fprintf(stderr,"%s:  Cannot open display.",argv[0]);
-		exit(1);
-	}
 
-
+	/* Parse command line */
 	while (1) {
 		int option_index = 0;
 		static struct option long_options[] = {
@@ -80,7 +75,7 @@ int main(int argc, char *argv[]) {
 			{0,0,0,0}
 		};
 		
-		c=getopt_long(argc,argv,"pPc:qhV",long_options,&option_index);
+		c=getopt_long(argc,argv,"pPmc:qhV",long_options,&option_index);
 		if (c==-1)
 			break;
 		
@@ -99,20 +94,8 @@ int main(int argc, char *argv[]) {
 
 		case 'p':
 		case 'P':  /* Compatibility, may disappear in future */
-			scr=XDefaultScreenOfDisplay(dpy);
-			if (scr==NULL) {
-				fprintf(stderr,"XDefaultScreenOfDisplay "
-					"returned NULL!\n");
-				exit(1);
-			}
-			screen=XScreenNumberOfScreen(scr);
-
-			wnd=XDefaultRootWindow(dpy);
-			XQueryPointer(dpy,wnd,&wtmp,&wtmp,&x,&y,&itmp,&itmp,
-				      &itmp);
-
-			printf("Screen: %d  Coordinates: %d,%d\n",screen,x,y);
-			exit(0);
+			print=1;
+			break;
 
 		case 'q':
 			quiet=1;
@@ -133,6 +116,8 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+
+	/* Check remaining command line options */
 	if (optind < argc) {
 		if (optind+1 < argc) {
 			fprintf(stderr,"Too many arguments for format.\n");
@@ -147,13 +132,47 @@ int main(int argc, char *argv[]) {
 	}
 
 
-	if (screen<0 && (x<0 || y<0)) {
+	/* No necessary options given. */
+	if (screen<0 && (x<0 || y<0) && !print) {
 		help();
 		exit(1);
 	}
 
+
+	/* Open display */
+	dpy = XOpenDisplay(NULL);
+	if (dpy==NULL) {
+		fprintf(stderr,"%s:  Cannot open display.\n",argv[0]);
+		exit(1);
+	}
+
+
+	/* Get screen number if not specified (or if to be printed) */
+	if ((screen<0) || print) {
+		scr=XDefaultScreenOfDisplay(dpy);
+		if (scr==NULL) {
+			fprintf(stderr,"XDefaultScreenOfDisplay "
+				"returned NULL!\n");
+			exit(1);
+		}
+		screen=XScreenNumberOfScreen(scr);
+	}
+
+
+	/* Only print position */
+	if (print) {
+		wnd=XDefaultRootWindow(dpy);
+		XQueryPointer(dpy,wnd,&wtmp,&wtmp,&x,&y,&itmp,&itmp,
+				      (unsigned int*)&itmp);
+		
+		printf("Screen: %d  Coordinates: %d,%d\n",screen,x,y);
+		exit(0);
+	}
+
+
+	/* Set cursor to middle of screen */
 	if (x<0 || y<0) {
-		scr=XScreenOfDisplay(dpy,screen);
+		scr=ScreenOfDisplay(dpy,screen);
 		if (scr==NULL) {
 			fprintf(stderr,"XScreensOfDisplay returned NULL!\n");
 			exit(1);
@@ -161,6 +180,7 @@ int main(int argc, char *argv[]) {
 		x=XWidthOfScreen(scr)/2;
 		y=XHeightOfScreen(scr)/2;
 	}
+
 
 	if (!quiet) {
 		if (screen==-1)
@@ -170,7 +190,14 @@ int main(int argc, char *argv[]) {
 			       screen,x,y);
 	}
 
-	XTestFakeMotionEvent(dpy,screen,x,y,CurrentTime);
+	wnd = RootWindow(dpy, screen);
+
+	XSetInputFocus(dpy, wnd, RevertToNone, CurrentTime);
+	XFlush(dpy);
+	XGrabPointer(dpy, wnd, False, 0, GrabModeAsync, GrabModeAsync, None,
+			None, CurrentTime);
+	XWarpPointer(dpy, None, wnd, 0, 0, 0, 0, x, y);
+	XUngrabPointer(dpy, CurrentTime);
 
 	XCloseDisplay(dpy);
 	return 0;

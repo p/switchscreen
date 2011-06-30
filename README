@@ -54,10 +54,13 @@ the following:
 Bugs
 ----
 
-In some cases, when switching to the second screen (which uses fvwm2),
-the window containing the pointer doesn't get the focus before the
-pointer has been moved to another window and back.  I'm not sure where
-this bug comes from, and I suspect that it is a bug in fvwm2.
+With version 0.1.0, in some cases switching to the second screen the
+focus doesn't immediately change to the window containing the pointer
+before it has been moved to another window and back.
+
+In version 0.1.1 a patch from Javeed Shaikh has been applied that
+reportedly fixes this problem.  I have not tested the new version, and
+I recommend testing for yourself which version works better for you.
 
 
 Legal jabber
