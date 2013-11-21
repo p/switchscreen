@@ -37,11 +37,11 @@ void help(void) {
 	printf("\n");
 	printf("<screen> is the screen number to switch to.  Options are the following:\n");
 	printf("\n");
-	printf("   -p      --print      Print current screen number and pointer coordinates.\n");
-	printf("   -c x,y  --coord x,y  Set pointer to coordinates (x,y).\n");
-	printf("   -q      --quiet      Quiet operation.\n");
-	printf("   -h      --help       Show this help screen.\n");
-	printf("   -V      --version    Show program version.\n");
+	printf("   -p              --print              Print current screen number and pointer coordinates.\n");
+	printf("   -c x,y[,focus]  --coord x,y[,focus]  Set pointer to coordinates (x,y) and optionally set window focus.\n");
+	printf("   -q              --quiet              Quiet operation.\n");
+	printf("   -h              --help               Show this help screen.\n");
+	printf("   -V              --version            Show program version.\n");
 	printf("\n");
 	return;
 }
@@ -55,6 +55,8 @@ int main(int argc, char *argv[]) {
 	int c;
 	int screen=-1;
 	int x=-1, y=-1;
+	int focus=-1;
+	int focus_state=RevertToNone;
 	int quiet=0;
 	int print=0;
 
@@ -84,16 +86,21 @@ int main(int argc, char *argv[]) {
 			break;
 
 		case 'c':
-			if (sscanf(optarg,"%d,%d",&x,&y)!=2) {
-				fprintf(stderr,"Bad argument for -c: %s\n"
-					"(Correct format is 'x,y'.)\n",
-					optarg);
-				exit(1);
+			if (sscanf(optarg,"%d,%d,%d",&x,&y,&focus)!=3) {
+				if (x!=-1 && y!=-1) {
+					focus=PointerRoot; // set default focus
+				}
+				else {
+					fprintf(stderr,"Bad argument for -c: %s\n"
+						"(Correct format is 'x,y,focus'.)\n",
+						optarg);
+					exit(1);
+				}
 			}
 			break;
 
 		case 'p':
-		case 'P':  /* Compatibility, may disappear in future */
+		//case 'P':  /* Compatibility, may disappear in future */
 			print=1;
 			break;
 
@@ -115,7 +122,6 @@ int main(int argc, char *argv[]) {
 
 		}
 	}
-
 
 	/* Check remaining command line options */
 	if (optind < argc) {
@@ -161,11 +167,11 @@ int main(int argc, char *argv[]) {
 
 	/* Only print position */
 	if (print) {
-		wnd=XDefaultRootWindow(dpy);
+		XGetInputFocus(dpy,&wnd,&focus_state);
 		XQueryPointer(dpy,wnd,&wtmp,&wtmp,&x,&y,&itmp,&itmp,
 				      (unsigned int*)&itmp);
 		
-		printf("Screen: %d  Coordinates: %d,%d\n",screen,x,y);
+		printf("Screen: %d  Coordinates: %d,%d,%d\n",screen,x,y,(int)wnd);
 		exit(0);
 	}
 
@@ -190,12 +196,16 @@ int main(int argc, char *argv[]) {
 			       screen,x,y);
 	}
 
+
 	wnd = RootWindow(dpy, screen);
 
-	XSetInputFocus(dpy, wnd, RevertToNone, CurrentTime);
+	if (focus == -1) {
+		focus = wnd;
+	}
+
+	XSetInputFocus(dpy, focus, RevertToPointerRoot, CurrentTime); // use focus instead of wnd
 	XFlush(dpy);
-	XGrabPointer(dpy, wnd, False, 0, GrabModeAsync, GrabModeAsync, None,
-			None, CurrentTime);
+	XGrabPointer(dpy, wnd, False, 0, GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
 	XWarpPointer(dpy, None, wnd, 0, 0, 0, 0, x, y);
 	XUngrabPointer(dpy, CurrentTime);
 
