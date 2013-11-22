@@ -32,7 +32,8 @@
 #define ACTION_MOVESCREEN  3
 
 
-void help(void) {
+void help(void) 
+{
 	printf("Usage:  switchscreen [options] <screen>\n");
 	printf("\n");
 	printf("<screen> is the screen number to switch to.  Options are the following:\n");
@@ -48,21 +49,21 @@ void help(void) {
 
 
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) 
+{
 	Display *dpy;
 	Screen *scr;
 	Window wnd;
 	int c;
-	int screen=-1;
-	int x=-1, y=-1;
-	int focus=-1;
-	int focus_state=RevertToNone;
-	int quiet=0;
-	int print=0;
+	int screen = -1;
+	int x = -1, y = -1;
+	int focus = -1;
+	int focus_state = RevertToNone;
+	int quiet = 0;
+	int print = 0;
 
 	Window wtmp;
 	int itmp;
-
 
 	/* Parse command line */
 	while (1) {
@@ -77,8 +78,8 @@ int main(int argc, char *argv[]) {
 			{0,0,0,0}
 		};
 		
-		c=getopt_long(argc,argv,"pPmc:qhV",long_options,&option_index);
-		if (c==-1)
+		c = getopt_long(argc, argv, "pPmc:qhV", long_options, &option_index);
+		if (c == -1)
 			break;
 		
 		switch (c) {
@@ -86,26 +87,22 @@ int main(int argc, char *argv[]) {
 			break;
 
 		case 'c':
-			if (sscanf(optarg,"%d,%d,%d",&x,&y,&focus)!=3) {
-				if (x!=-1 && y!=-1) {
-					focus=PointerRoot; // set default focus
-				}
-				else {
-					fprintf(stderr,"Bad argument for -c: %s\n"
-						"(Correct format is 'x,y,focus'.)\n",
-						optarg);
+			if (sscanf(optarg, "%d,%d,%d", &x, &y, &focus) != 3) {
+				if (x != -1 && y != -1) {
+					focus = PointerRoot; // set default focus
+				} else {
+					fprintf(stderr, "Bad argument for -c: %s\n(Correct format is 'x,y,focus'.)\n", optarg);
 					exit(1);
 				}
 			}
 			break;
 
 		case 'p':
-		//case 'P':  /* Compatibility, may disappear in future */
-			print=1;
+			print = 1;
 			break;
 
 		case 'q':
-			quiet=1;
+			quiet = 1;
 			break;
 
 		case 'h':
@@ -117,7 +114,7 @@ int main(int argc, char *argv[]) {
 			exit(0);
 
 		default:
-			fprintf(stderr,"Use '%s -h' for help.\n",argv[0]);
+			fprintf(stderr, "Use '%s -h' for help.\n", argv[0]);
 			exit(1);
 
 		}
@@ -126,17 +123,16 @@ int main(int argc, char *argv[]) {
 	/* Check remaining command line options */
 	if (optind < argc) {
 		if (optind+1 < argc) {
-			fprintf(stderr,"Too many arguments for format.\n");
-			fprintf(stderr,"Use '%s -h' for help.\n",argv[0]);
+			fprintf(stderr, "Too many arguments for format.\n");
+			fprintf(stderr, "Use '%s -h' for help.\n", argv[0]);
 			exit(1);
 		}
-		if (sscanf(argv[optind],"%d",&screen)<1) {
-			fprintf(stderr,"Bad argument:  %s\n",argv[optind]);
-			fprintf(stderr,"Use '%s -h' for help.\n",argv[0]);
+		if (sscanf(argv[optind], "%d", &screen) < 1) {
+			fprintf(stderr, "Bad argument:  %s\n", argv[optind]);
+			fprintf(stderr, "Use '%s -h' for help.\n", argv[0]);
 			exit(1);
 		}
 	}
-
 
 	/* No necessary options given. */
 	if (screen<0 && (x<0 || y<0) && !print) {
@@ -144,58 +140,52 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
-
 	/* Open display */
 	dpy = XOpenDisplay(NULL);
-	if (dpy==NULL) {
-		fprintf(stderr,"%s:  Cannot open display.\n",argv[0]);
+	if (dpy == NULL) {
+		fprintf(stderr, "%s:  Cannot open display.\n", argv[0]);
 		exit(1);
 	}
 
-
 	/* Get screen number if not specified (or if to be printed) */
 	if ((screen<0) || print) {
-		scr=XDefaultScreenOfDisplay(dpy);
-		if (scr==NULL) {
-			fprintf(stderr,"XDefaultScreenOfDisplay "
-				"returned NULL!\n");
+		scr = XDefaultScreenOfDisplay(dpy);
+		if (scr == NULL) {
+			fprintf(stderr, "XDefaultScreenOfDisplay returned NULL!\n");
+			XCloseDisplay(dpy);
 			exit(1);
 		}
-		screen=XScreenNumberOfScreen(scr);
+		screen = XScreenNumberOfScreen(scr);
 	}
 
-
-	/* Only print position */
+	/* Only print position and focus*/
 	if (print) {
-		XGetInputFocus(dpy,&wnd,&focus_state);
-		XQueryPointer(dpy,wnd,&wtmp,&wtmp,&x,&y,&itmp,&itmp,
-				      (unsigned int*)&itmp);
-		
-		printf("Screen: %d  Coordinates: %d,%d,%d\n",screen,x,y,(int)wnd);
+		XGetInputFocus(dpy, &wnd, &focus_state);
+		XQueryPointer(dpy, wnd, &wtmp, &wtmp, &x, &y, &itmp, &itmp, (unsigned int*)&itmp);
+		printf("Screen: %d  x,y,focus: %d,%d,%d\n", screen, x, y, (int)wnd);
+		XCloseDisplay(dpy);
 		exit(0);
 	}
 
-
 	/* Set cursor to middle of screen */
 	if (x<0 || y<0) {
-		scr=ScreenOfDisplay(dpy,screen);
-		if (scr==NULL) {
-			fprintf(stderr,"XScreensOfDisplay returned NULL!\n");
+		scr = ScreenOfDisplay(dpy, screen);
+		if (scr == NULL) {
+			fprintf(stderr, "XScreensOfDisplay returned NULL!\n");
+			XCloseDisplay(dpy);
 			exit(1);
 		}
-		x=XWidthOfScreen(scr)/2;
-		y=XHeightOfScreen(scr)/2;
+		x = XWidthOfScreen(scr) / 2;
+		y = XHeightOfScreen(scr) / 2;
 	}
-
 
 	if (!quiet) {
-		if (screen==-1)
-			printf("Setting coordinates %d,%d.\n",x,y);
-		else
-			printf("Setting Screen %d at coordinates %d,%d.\n",
-			       screen,x,y);
+		if (screen == -1) {
+			printf("Setting coordinates %d,%d.\n", x, y);
+		} else {
+			printf("Setting Screen %d at coordinates %d,%d.\n", screen, x, y);
+		}
 	}
-
 
 	wnd = RootWindow(dpy, screen);
 
@@ -210,5 +200,6 @@ int main(int argc, char *argv[]) {
 	XUngrabPointer(dpy, CurrentTime);
 
 	XCloseDisplay(dpy);
+
 	return 0;
 }
