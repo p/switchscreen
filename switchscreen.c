@@ -25,7 +25,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define VERSION "0.1.1"
+#define VERSION "0.1.2"
 
 #define ACTION_PRINTSCREEN 1
 #define ACTION_PRINTCOORDS 2
