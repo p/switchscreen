@@ -4,7 +4,7 @@ STOREFILE=~/.togglescreen
 SWITCHSCREEN=switchscreen
 
 
-CURRENT="`$SWITCHSCREEN -P`"
+CURRENT="`$SWITCHSCREEN -p`"
 CURSCR=`echo "$CURRENT" | gawk '{ print $2 }'`
 CURPOS=`echo "$CURRENT" | gawk '{ print $4 }'`
 

@@ -62,6 +62,9 @@ In version 0.1.1 a patch from Javeed Shaikh has been applied that
 reportedly fixes this problem.  I have not tested the new version, and
 I recommend testing for yourself which version works better for you.
 
+In (the unofficial) version 0.1.2 the ID of the last focused window gets saved.
+This fixes a focus issue with dwm.
+
 
 Legal jabber
 ------------
